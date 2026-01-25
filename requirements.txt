@@ -1,0 +1,12 @@
+# Python dependencies for video/audio processing tools
+# Install with: pip install -r requirements.txt
+
+tqdm>=4.65.0
+
+# ===========================================
+# SYSTEM REQUIREMENTS (install separately):
+# ===========================================
+# FFmpeg (required for both scripts)
+#   - Windows: Download from https://ffmpeg.org/download.html
+#   - Or install via: winget install FFmpeg
+#   - Ensure ffmpeg and ffprobe are in your PATH

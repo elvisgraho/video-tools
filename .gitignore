@@ -1,0 +1,5 @@
+output
+*.wav
+*.mp4
+*.srt
+__pycache__

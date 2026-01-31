@@ -545,7 +545,10 @@ def main():
         sys.exit(1)
 
     check_ffmpeg()
-    check_gpu()
+    if not check_gpu():
+        logger.critical("No CUDA GPU detected. Install PyTorch with CUDA support:")
+        logger.critical("  pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124")
+        sys.exit(1)
 
     # --- Setup Log Files ---
     log_dir = get_log_dir(args)
@@ -569,38 +572,19 @@ def main():
 
     # Load Model
     logger.info("Loading Model (Float16) with Batched Inference...")
-    use_gpu = check_gpu()
 
     try:
-        if use_gpu:
-            # Optimized for RTX 4070 Ti SUPER (16GB VRAM)
-            # - int8_float16: Weights in int8, compute in float16 (faster, minimal quality loss)
-            # - cpu_threads: Parallel feature extraction on CPU
-            # - num_workers: Parallel audio preprocessing
-            base_model = WhisperModel(
-                args.model,
-                device="cuda",
-                compute_type="int8_float16",
-                cpu_threads=args.cpu_threads,
-                num_workers=4
-            )
-        else:
-            logger.info("Using CPU mode (int8 for speed)")
-            base_model = WhisperModel(args.model, device="cpu", compute_type="int8", cpu_threads=args.cpu_threads)
+        base_model = WhisperModel(
+            args.model,
+            device="cuda",
+            compute_type="int8_float16",
+            cpu_threads=args.cpu_threads,
+            num_workers=4
+        )
         model = BatchedInferencePipeline(model=base_model)
     except Exception as e:
-        if "cublas" in str(e).lower() or "cudnn" in str(e).lower() or "cuda" in str(e).lower():
-            logger.warning(f"CUDA error: {e}")
-            logger.info("Falling back to CPU mode...")
-            try:
-                base_model = WhisperModel(args.model, device="cpu", compute_type="int8")
-                model = BatchedInferencePipeline(model=base_model)
-            except Exception as e2:
-                logger.critical(f"Model Load Failed: {e2}")
-                sys.exit(1)
-        else:
-            logger.critical(f"Model Load Failed: {e}")
-            sys.exit(1)
+        logger.critical(f"Model Load Failed: {e}")
+        sys.exit(1)
 
     # Find Files
     input_path = Path(args.input)
